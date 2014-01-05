@@ -395,6 +395,7 @@ OOLITE_MISC_FILES = \
     GameController.m \
     GameController+SDLFullScreen.m \
     OOJoystickManager.m \
+    OOJoystickProfile.m \
     OOSDLJoystickManager.m \
     main.m \
     MyOpenGLView.m \
