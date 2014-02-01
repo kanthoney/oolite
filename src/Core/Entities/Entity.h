@@ -73,6 +73,7 @@ enum OOScanClass
 
 #undef ENTRY
 
+#define INTERPOLATE_POSITION_DELTA	(1.0/3)
 
 @interface Entity: OOWeakRefObject
 {
@@ -110,6 +111,9 @@ enum OOScanClass
 	GLfloat					collision_radius;
 	HPVector					position; // use high-precision vectors for global position
 	Vector						cameraRelativePosition;
+	HPVector				recordedPositions[3];
+	OOTimeAbsolute				recordedPositionTime;
+	HPVector				interpolatedPosition;
 	Quaternion				orientation;
 	
 	int						zero_index;
@@ -202,9 +206,13 @@ enum OOScanClass
 - (void) setPosition:(HPVector)posn;
 - (void) setPositionX:(OOHPScalar)x y:(OOHPScalar)y z:(OOHPScalar)z;
 - (HPVector) position;
+- (HPVector) interpolatedPosition;
+- (HPVector) calculateInterpolatedPosition;
+- (OOHPScalar) calculateInterpolatedCoordinate: (OOTimeDelta) t x0: (OOHPScalar) x0 x1: (OOHPScalar) x1 x2: (OOHPScalar) x2;
 - (Vector) cameraRelativePosition;
 // gets a low-position relative vector
 - (Vector) vectorTo:(Entity *)entity;
+- (Vector) interpolatedVectorTo: (Entity *) entity;
 
 - (HPVector) absolutePositionForSubentity;
 - (HPVector) absolutePositionForSubentityOffset:(HPVector) offset;

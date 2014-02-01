@@ -603,6 +603,30 @@ static NSString * const kOOLogEntityUpdateError				= @"entity.linkedList.update.
 	return position;
 }
 
+- (HPVector) interpolatedPosition
+{
+	return interpolatedPosition;
+}
+
+- (HPVector) calculateInterpolatedPosition
+{
+	OOTimeDelta t = [UNIVERSE getTime] - recordedPositionTime;
+	interpolatedPosition.x = [self calculateInterpolatedCoordinate: t x0: recordedPositions[0].x x1: recordedPositions[1].x x2: recordedPositions[2].x];
+	interpolatedPosition.y = [self calculateInterpolatedCoordinate: t x0: recordedPositions[0].y x1: recordedPositions[1].y x2: recordedPositions[2].y];
+	interpolatedPosition.z = [self calculateInterpolatedCoordinate: t x0: recordedPositions[0].z x1: recordedPositions[1].z x2: recordedPositions[2].z];
+	return interpolatedPosition;
+}
+
+- (OOHPScalar) calculateInterpolatedCoordinate: (OOTimeDelta) t x0: (OOHPScalar) x0 x1: (OOHPScalar) x1 x2: (OOHPScalar) x2
+{
+	OOHPScalar a[3];
+	a[0] = x0;
+	a[1] = (3*x0/2 -2*x1 + x2/2)/INTERPOLATE_POSITION_DELTA;
+	a[2] = (x0/2 - x1 + x2/2)/(INTERPOLATE_POSITION_DELTA*INTERPOLATE_POSITION_DELTA);
+	return a[0] + (a[1] + a[2]*t)*t;
+}
+
+
 - (Vector) cameraRelativePosition
 {
 	return cameraRelativePosition;
@@ -621,10 +645,20 @@ static NSString * const kOOLogEntityUpdateError				= @"entity.linkedList.update.
 	return HPVectorToVector(HPvector_subtract([entity position], [self position]));
 }
 
+- (Vector) interpolatedVectorTo: (Entity *) entity
+{
+	return HPVectorToVector(HPvector_subtract([entity interpolatedPosition], [self position]));
+}
+
 
 - (void) setPosition:(HPVector) posn
 {
 	position = posn;
+	recordedPositions[0] = position;
+	recordedPositions[1] = position;
+	recordedPositions[2] = position;
+	recordedPositionTime = [UNIVERSE getTime];
+	interpolatedPosition = position;
 	[self updateCameraRelativePosition];
 }
 
@@ -634,6 +668,11 @@ static NSString * const kOOLogEntityUpdateError				= @"entity.linkedList.update.
 	position.x = x;
 	position.y = y;
 	position.z = z;
+	recordedPositions[0] = position;
+	recordedPositions[1] = position;
+	recordedPositions[2] = position;
+	recordedPositionTime = [UNIVERSE getTime];
+	interpolatedPosition = position;
 	[self updateCameraRelativePosition];
 }
 
@@ -930,6 +969,14 @@ static NSString * const kOOLogEntityUpdateError				= @"entity.linkedList.update.
 	hasRotated = !quaternion_equal(orientation, lastOrientation);
 	lastPosition = position;
 	lastOrientation = orientation;
+	[self calculateInterpolatedPosition];
+	if ([UNIVERSE getTime] - recordedPositionTime > INTERPOLATE_POSITION_DELTA)
+	{
+		recordedPositions[2] = recordedPositions[1];
+		recordedPositions[1] = recordedPositions[0];
+		recordedPositions[0] = position;
+		recordedPositionTime = [UNIVERSE getTime];
+	}
 }
 
 
