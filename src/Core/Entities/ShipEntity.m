@@ -9505,8 +9505,8 @@ Vector positionOffsetForShipInRotationToAlignment(ShipEntity* ship, Quaternion q
 
 	GLfloat  d_forward, d_up, d_right;
 	
-	//Vector  relPos = [self interpolatedVectorTo:target];
-	Vector  relPos = [self vectorTo:target];
+	Vector  relPos = [self interpolatedVectorTo:target];
+	//Vector  relPos = [self vectorTo:target];
 	
 	double	range2 = magnitude2(relPos);
 
@@ -9736,8 +9736,8 @@ Vector positionOffsetForShipInRotationToAlignment(ShipEntity* ship, Quaternion q
 
 	GLfloat  d_forward, d_up, d_right;
 	
-	//Vector  relPos = [self interpolatedVectorTo:target];
-	Vector  relPos = [self vectorTo:target];
+	Vector  relPos = [self interpolatedVectorTo:target];
+	//Vector  relPos = [self vectorTo:target];
 	double	range2 = magnitude2(relPos);
 
 	if (range2 > scannerRange * scannerRange)
@@ -10306,8 +10306,8 @@ Vector positionOffsetForShipInRotationToAlignment(ShipEntity* ship, Quaternion q
 		return NO;	// 3/4 of the time you can't see from a lit place into a darker place
 	}
 	radius = target->collision_radius;
-	//rel_pos = [self interpolatedVectorTo:target];
-	rel_pos = [self vectorTo:target];
+	rel_pos = [self interpolatedVectorTo:target];
+	//rel_pos = [self vectorTo:target];
 	d2 = magnitude2(rel_pos);
 	urp = vector_normal_or_zbasis(rel_pos);
 	
@@ -10740,8 +10740,8 @@ Vector positionOffsetForShipInRotationToAlignment(ShipEntity* ship, Quaternion q
 	double			range_limit2 = weaponRange*weaponRange;
 	Vector			r_pos;
 	
-	//r_pos = vector_normal_or_zbasis([self interpolatedVectorTo:my_target]);
-	r_pos = vector_normal_or_zbasis([self vectorTo:my_target]);
+	r_pos = vector_normal_or_zbasis([self interpolatedVectorTo:my_target]);
+	//r_pos = vector_normal_or_zbasis([self vectorTo:my_target]);
 
 	Quaternion		q_laser = quaternion_rotation_between(r_pos, kBasisZVector);
 
