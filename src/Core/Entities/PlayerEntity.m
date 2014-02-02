@@ -2072,13 +2072,6 @@ static GLfloat		sBaseMass = 0.0;
 	
 	STAGE_TRACKING_END
 	[self calculateInterpolatedPosition];
-	if ([UNIVERSE getTime] - recordedPositionTime > INTERPOLATE_POSITION_DELTA)
-	{
-		recordedPositions[2] = recordedPositions[1];
-		recordedPositions[1] = recordedPositions[0];
-		recordedPositions[0] = position;
-		recordedPositionTime = [UNIVERSE getTime];
-	}
 }
 
 

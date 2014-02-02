@@ -614,6 +614,13 @@ static NSString * const kOOLogEntityUpdateError				= @"entity.linkedList.update.
 	interpolatedPosition.x = [self calculateInterpolatedCoordinate: t x0: recordedPositions[0].x x1: recordedPositions[1].x x2: recordedPositions[2].x];
 	interpolatedPosition.y = [self calculateInterpolatedCoordinate: t x0: recordedPositions[0].y x1: recordedPositions[1].y x2: recordedPositions[2].y];
 	interpolatedPosition.z = [self calculateInterpolatedCoordinate: t x0: recordedPositions[0].z x1: recordedPositions[1].z x2: recordedPositions[2].z];
+	if ([UNIVERSE getTime] - recordedPositionTime > INTERPOLATE_POSITION_DELTA)
+	{
+		recordedPositions[2] = recordedPositions[1];
+		recordedPositions[1] = recordedPositions[0];
+		recordedPositions[0] = position;
+		recordedPositionTime = [UNIVERSE getTime];
+	}
 	return interpolatedPosition;
 }
 
@@ -970,13 +977,6 @@ static NSString * const kOOLogEntityUpdateError				= @"entity.linkedList.update.
 	lastPosition = position;
 	lastOrientation = orientation;
 	[self calculateInterpolatedPosition];
-	if ([UNIVERSE getTime] - recordedPositionTime > INTERPOLATE_POSITION_DELTA)
-	{
-		recordedPositions[2] = recordedPositions[1];
-		recordedPositions[1] = recordedPositions[0];
-		recordedPositions[0] = position;
-		recordedPositionTime = [UNIVERSE getTime];
-	}
 }
 
 
