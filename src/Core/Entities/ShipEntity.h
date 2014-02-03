@@ -445,6 +445,11 @@ typedef enum
 	OOWeakReference			*_prevBeacon;
 	OOWeakReference			*_nextBeacon;
 	id <OOHUDBeaconIcon>	_beaconDrawable;
+	
+	OOTimeDelta				reactionTime;
+	HPVector				targetRecordedPositions[3];
+	OOTimeAbsolute				targetRecordedPositionTime;
+	HPVector				targetInterpolatedPosition;
 
 	double			_nextAegisCheck;
 }

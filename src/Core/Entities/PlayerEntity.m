@@ -2071,7 +2071,6 @@ static GLfloat		sBaseMass = 0.0;
 	[self updateWormholes];
 	
 	STAGE_TRACKING_END
-	[self calculateInterpolatedPosition];
 }
 
 

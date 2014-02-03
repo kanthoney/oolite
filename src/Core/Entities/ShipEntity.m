@@ -160,6 +160,9 @@ static GLfloat calcFuelChargeRate (GLfloat myMass)
 - (void) setShipHitByLaser:(ShipEntity *)ship;
 
 - (void) noteFrustration:(NSString *)context;
+- (HPVector) calculateTargetInterpolatedPosition;
+- (OOHPScalar) calculateInterpolatedCoordinate: (OOTimeDelta) t x0: (OOHPScalar) x0 x1: (OOHPScalar) x1 x2: (OOHPScalar) x2;
+- (void) setTargetTracking;
 
 @end
 
@@ -433,7 +436,6 @@ static ShipEntity *doOctreesCollide(ShipEntity *prime, ShipEntity *other);
 	// Get scriptInfo dictionary, containing arbitrary stuff scripts might be interested in.
 	scriptInfo = [[shipDict oo_dictionaryForKey:@"script_info" defaultValue:nil] retain];
 
-	
 	return YES;
 	
 	OOJS_PROFILE_EXIT
@@ -665,6 +667,9 @@ static ShipEntity *doOctreesCollide(ShipEntity *prime, ShipEntity *other);
 	home_system = [UNIVERSE currentSystemID];
 	destination_system = [UNIVERSE currentSystemID];
 	
+	//set reaction time
+	reactionTime = [shipDict oo_floatForKey:@"reaction_time" defaultValue: 1.0/3];
+
 	return YES;
 	
 	OOJS_PROFILE_EXIT
@@ -2561,6 +2566,8 @@ ShipEntity* doOctreesCollide(ShipEntity* prime, ShipEntity* other)
 		aiScriptWakeTime = 0;
 		[self doScriptEvent:OOJSID("aiAwoken")];
 	}
+	
+	[self calculateTargetInterpolatedPosition];
 }
 
 
@@ -2728,6 +2735,46 @@ ShipEntity* doOctreesCollide(ShipEntity* prime, ShipEntity* other)
 {
 	[shipAI reactToMessage:@"FRUSTRATED" context:context];
 	[self doScriptEvent:OOJSID("shipAIFrustrated") withArgument:context];
+}
+
+- (HPVector) calculateTargetInterpolatedPosition
+{
+	Entity *target = (Entity *)[self primaryTarget];
+	OOTimeDelta t = [UNIVERSE getTime] - targetRecordedPositionTime;
+	targetInterpolatedPosition.x = [self calculateInterpolatedCoordinate: t x0: targetRecordedPositions[0].x x1: targetRecordedPositions[1].x x2: targetRecordedPositions[2].x];
+	targetInterpolatedPosition.y = [self calculateInterpolatedCoordinate: t x0: targetRecordedPositions[0].y x1: targetRecordedPositions[1].y x2: targetRecordedPositions[2].y];
+	targetInterpolatedPosition.z = [self calculateInterpolatedCoordinate: t x0: targetRecordedPositions[0].z x1: targetRecordedPositions[1].z x2: targetRecordedPositions[2].z];
+	if (target != nil && [UNIVERSE getTime] - targetRecordedPositionTime > reactionTime)
+	{
+		targetRecordedPositions[2] = targetRecordedPositions[1];
+		targetRecordedPositions[1] = targetRecordedPositions[0];
+		targetRecordedPositions[0] = [target position];
+		targetRecordedPositionTime = [UNIVERSE getTime];
+	}
+	return targetInterpolatedPosition;
+}
+
+- (OOHPScalar) calculateInterpolatedCoordinate: (OOTimeDelta) t x0: (OOHPScalar) x0 x1: (OOHPScalar) x1 x2: (OOHPScalar) x2
+{
+	OOHPScalar a[3];
+	a[0] = x0;
+	a[1] = (3*x0/2 -2*x1 + x2/2)/reactionTime;
+	a[2] = (x0/2 - x1 + x2/2)/(reactionTime*reactionTime);
+	return a[0] + (a[1] + a[2]*t)*t;
+}
+
+-(void) setTargetTracking
+{
+	Entity *target = (Entity *)[self primaryTarget];
+	if (target)
+	{
+		targetRecordedPositions[2] = [target position];
+		targetRecordedPositions[1] = targetRecordedPositions[2];
+		targetRecordedPositions[0] = targetRecordedPositions[2];
+		targetInterpolatedPosition = targetRecordedPositions[2];
+		targetRecordedPositionTime = [UNIVERSE getTime];
+	}
+	return;
 }
 
 
@@ -6248,6 +6295,7 @@ static GLfloat scripted_color[4] = 	{ 0.0, 0.0, 0.0, 0.0};	// to be defined by s
 	behaviour =		[previousCondition oo_intForKey:@"behaviour"];
 	[_primaryTarget release];
 	_primaryTarget =	[[previousCondition objectForKey:@"primaryTarget"] weakRetain];
+	[self setTargetTracking];
 	desired_range =	[previousCondition oo_floatForKey:@"desired_range"];
 	desired_speed =	[previousCondition oo_floatForKey:@"desired_speed"];
 	destination =	[previousCondition oo_hpvectorForKey:@"destination"];
@@ -9128,6 +9176,7 @@ Vector positionOffsetForShipInRotationToAlignment(ShipEntity* ship, Quaternion q
 	{
 		DESTROY(_primaryTarget);
 		_primaryTarget = [targetEntity weakRetain];
+		[self setTargetTracking];
 	}
 	
 	[[self shipSubEntityEnumerator] makeObjectsPerformSelector:@selector(addTarget:) withObject:targetEntity];
@@ -9327,7 +9376,7 @@ Vector positionOffsetForShipInRotationToAlignment(ShipEntity* ship, Quaternion q
 	if (!target)
 		return;
 
-	vector_to_target = [self interpolatedVectorTo:target];
+	vector_to_target = HPVectorToVector(HPvector_subtract(targetInterpolatedPosition, [self position]));
 	//
 	GLfloat range2 =		magnitude2(vector_to_target);
 	GLfloat	targetRadius =	0.75 * target->collision_radius;
@@ -9505,7 +9554,7 @@ Vector positionOffsetForShipInRotationToAlignment(ShipEntity* ship, Quaternion q
 
 	GLfloat  d_forward, d_up, d_right;
 	
-	Vector  relPos = [self interpolatedVectorTo:target];
+	Vector relPos = HPVectorToVector(HPvector_subtract(targetInterpolatedPosition, [self position]));
 	//Vector  relPos = [self vectorTo:target];
 	
 	double	range2 = magnitude2(relPos);
@@ -9736,7 +9785,7 @@ Vector positionOffsetForShipInRotationToAlignment(ShipEntity* ship, Quaternion q
 
 	GLfloat  d_forward, d_up, d_right;
 	
-	Vector  relPos = [self interpolatedVectorTo:target];
+	Vector relPos = HPVectorToVector(HPvector_subtract(targetInterpolatedPosition, [self position]));
 	//Vector  relPos = [self vectorTo:target];
 	double	range2 = magnitude2(relPos);
 
@@ -10306,8 +10355,7 @@ Vector positionOffsetForShipInRotationToAlignment(ShipEntity* ship, Quaternion q
 		return NO;	// 3/4 of the time you can't see from a lit place into a darker place
 	}
 	radius = target->collision_radius;
-	rel_pos = [self interpolatedVectorTo:target];
-	//rel_pos = [self vectorTo:target];
+	rel_pos = HPVectorToVector(HPvector_subtract(targetInterpolatedPosition, [self position]));
 	d2 = magnitude2(rel_pos);
 	urp = vector_normal_or_zbasis(rel_pos);
 	
@@ -10740,8 +10788,7 @@ Vector positionOffsetForShipInRotationToAlignment(ShipEntity* ship, Quaternion q
 	double			range_limit2 = weaponRange*weaponRange;
 	Vector			r_pos;
 	
-	r_pos = vector_normal_or_zbasis([self interpolatedVectorTo:my_target]);
-	//r_pos = vector_normal_or_zbasis([self vectorTo:my_target]);
+	r_pos = vector_normal_or_zbasis([self vectorTo:my_target]);
 
 	Quaternion		q_laser = quaternion_rotation_between(r_pos, kBasisZVector);
 
